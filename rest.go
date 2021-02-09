@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"net/http"
 
@@ -49,19 +50,17 @@ func RenderJSONFromBytes(w http.ResponseWriter, r *http.Request, data []byte) er
 
 //SPAHandler handle all path to render SPA. Use it before API routes!
 func SPAHandler(w http.ResponseWriter, r *http.Request, public string, static string) {
-	p := filepath.Join(static, filepath.Clean(r.URL.Path))
+	p := strings.Replace(r.URL.Path, public, "", 1)
+	p = filepath.Join(static, filepath.Clean(p))
 	log.Printf("File: %s", p)
 
 	if info, err := os.Stat(p); err != nil {
 		log.Printf("[ERROR] get path error: %s", err.Error())
 		index := filepath.Join(static, "index.html")
-		log.Printf("[DBG] serve index: %s", index)
 		http.ServeFile(w, r, index)
 		return
 	} else if info.IsDir() {
-		log.Printf("[DBG] is dir.")
-		index := filepath.Join(static, "index.html")
-		log.Printf("[DBG] serve index: %s", index)
+		index := filepath.Join(p, "index.html")
 		http.ServeFile(w, r, index)
 	} else {
 		fp := filepath.Join(static, info.Name())
